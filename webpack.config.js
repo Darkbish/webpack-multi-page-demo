@@ -1,5 +1,7 @@
 var glob = require("glob");
 var path = require("path");
+var fs = require("fs");
+var layout = fs.readFileSync(path.resolve(__dirname, "src/pages/layout/layout.html"), { encoding: "utf-8" });
 var webpack = require("webpack");
 var extractTextPlugin = require("extract-text-webpack-plugin");
 var htmlWebpackPlugin = require("html-webpack-plugin");
@@ -50,13 +52,14 @@ var config = {
         hot: true
     }
 };
-var pages = Object.keys(getEntry("src/pages/**/*.html", "src/pages/"));
+var pages = Object.keys(getEntry("src/pages/**/*.html", "src/pages/", ["src/pages/layout/"]));
 pages.push("index");
 pages.forEach(pathname => {
     var isIndex = pathname === "index";
+    var fileName = isIndex ? `${pathname}.html` : `pages/${pathname}.html`;
     var conf = {
-        filename: isIndex ? `./${pathname}.html` : `./pages/${pathname}.html`,
-        template: isIndex ? `./src/${pathname}.html` : `./src/pages/${pathname}.html`,
+        filename: "./" + fileName,
+        templateContent: generateTemplate("src/" + fileName),
         inject: false
     }
     if (pathname in config.entry) {
@@ -74,7 +77,7 @@ module.exports = config;
 
 function getEntry(globPath, pathDir, exclude) {
     var files = glob.sync(globPath).filter(function(item) {
-        return !(exclude && exclude.some(ex => ex == item));
+        return !(exclude && exclude.some(ex => item.indexOf(ex) !== -1));
     });;
     var entries = {},
         dirname, basename, pathname, extname;
@@ -88,4 +91,9 @@ function getEntry(globPath, pathDir, exclude) {
         entries[pathname] = ['./' + file];
     }
     return entries;
+}
+
+function generateTemplate(template) {
+    const pageContent = fs.readFileSync(template, { encoding: "utf-8" });
+    return layout.replace("{{ PAGE_CONTENT }}", pageContent);
 }
