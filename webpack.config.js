@@ -5,6 +5,7 @@ var layout = fs.readFileSync(path.resolve(__dirname, "src/pages/layout/layout.ht
 var webpack = require("webpack");
 var extractTextPlugin = require("extract-text-webpack-plugin");
 var htmlWebpackPlugin = require("html-webpack-plugin");
+var htmlLayoutWebpackPlugin = require("./html-layout-webpack-plugin.js");
 var entries = getEntry("src/js/**/*.js", "src/js/", ["src/js/common.js"]);
 var config = {
     entry: entries,
@@ -34,7 +35,8 @@ var config = {
     },
     plugins: [
         new webpack.ProvidePlugin({
-            $: "jquery"
+            $: "jquery",
+            jQuery: "jquery"
         }),
         new webpack.optimize.CommonsChunkPlugin({
             name: "vendors",
@@ -42,13 +44,16 @@ var config = {
             minChunks: Object.keys(entries).length
         }),
         new extractTextPlugin("css/[name].css"),
-        new webpack.HotModuleReplacementPlugin()
+        new webpack.HotModuleReplacementPlugin(),
+        new htmlLayoutWebpackPlugin({
+            template: "./src/pages/layout/layout.html"
+        })
     ],
     devServer: {
-        contentBase: "./",
+        contentBase: "./dist/",
         host: "localhost",
         port: 8080,
-        inline: true,
+        inline: false,
         hot: true
     }
 };
@@ -59,7 +64,7 @@ pages.forEach(pathname => {
     var fileName = isIndex ? `${pathname}.html` : `pages/${pathname}.html`;
     var conf = {
         filename: "./" + fileName,
-        templateContent: generateTemplate("src/" + fileName),
+        template: `./src/${fileName}`,
         inject: false
     }
     if (pathname in config.entry) {
